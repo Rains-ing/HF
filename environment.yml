@@ -1,0 +1,12 @@
+name: HierarchicalBurst-FlowBERT
+channels:
+  - http://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+  - http://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge/
+  - http://mirrors.ustc.edu.cn/anaconda/pkgs/free/
+  - defaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+  - https://repo.anaconda.com/pkgs/msys2
+dependencies:
+  - python=3.10
+prefix: C:\ProgramData\anaconda3\envs\HierarchicalBurst-FlowBERT

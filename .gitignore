@@ -1,0 +1,45 @@
+# macOS and editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Datasets and generated outputs
+datasets/
+data/
+result/
+results/
+logs/
+runs/
+outputs/
+
+# Model checkpoints and packet captures
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.pcap
+*.pcapng
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
