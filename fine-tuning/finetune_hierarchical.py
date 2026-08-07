@@ -26,6 +26,12 @@ from process_pretrain_data.hierarchical_dataset import load_dataset_info
 from uer.models.hierarchical_burst_flow_classifier import (
     HierarchicalBurstFlowClassifier,
 )
+from uer.finetune_lr_scheduler import (
+    LR_SCHEDULERS,
+    build_lr_schedule_config,
+    get_learning_rate,
+    set_optimizer_learning_rate,
+)
 
 
 def set_seed(seed):
@@ -414,6 +420,19 @@ def train(args):
         eps=1e-8,
     )
 
+    lr_schedule = build_lr_schedule_config(
+        args=args,
+        steps_per_epoch=len(train_loader),
+    )
+
+    print("[LR SCHEDULER]")
+    print(f"type: {lr_schedule['scheduler_name']}")
+    print(f"peak_lr: {lr_schedule['peak_lr']:.8g}")
+    print(f"min_lr: {lr_schedule['min_lr']:.8g}")
+    print(f"warmup_ratio: {lr_schedule['warmup_ratio']:.4f}")
+    print(f"warmup_steps: {lr_schedule['warmup_steps']}")
+    print(f"total_steps: {lr_schedule['total_steps']}")
+
     use_amp = args.fp16 and device.type == "cuda"
 
     try:
@@ -440,6 +459,16 @@ def train(args):
 
         for batch in train_loader:
             global_step += 1
+
+            current_lr = get_learning_rate(
+                current_step=global_step - 1,
+                total_steps=lr_schedule["total_steps"],
+                peak_lr=lr_schedule["peak_lr"],
+                min_lr=lr_schedule["min_lr"],
+                warmup_steps=lr_schedule["warmup_steps"],
+                scheduler_name=lr_schedule["scheduler_name"],
+            )
+            set_optimizer_learning_rate(optimizer, current_lr)
 
             batch = move_batch_to_device(batch, device)
 
@@ -507,6 +536,7 @@ def train(args):
                     f"step={global_step} "
                     f"loss={loss.item():.6f} "
                     f"train_acc={train_acc:.4f} "
+                    f"lr={current_lr:.8g} "
                     f"steps/s={steps_per_sec:.3f}"
                 )
 
@@ -627,6 +657,13 @@ def main():
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument(
+        "--lr_scheduler",
+        choices=LR_SCHEDULERS,
+        default="cosine",
+    )
+    parser.add_argument("--warmup_ratio", type=float, default=0.1)
+    parser.add_argument("--min_lr", type=float, default=1e-6)
     parser.add_argument("--weight_decay", type=float, default=0.01)
     parser.add_argument("--max_grad_norm", type=float, default=1.0)
     parser.add_argument("--drop_last", action="store_true")

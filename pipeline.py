@@ -128,7 +128,10 @@ PARAMETER_DESCRIPTIONS = {
         "dataset_info_path": "预训练阶段输出的 *_dataset_info.json。微调会从这里读取模型输入尺寸。",
         "epochs": "微调 epoch 数。",
         "batch_size": "微调 batch size。",
-        "lr": "微调学习率。",
+        "lr": "微调峰值学习率；cosine 调度会先 warmup 到该值。",
+        "lr_scheduler": "微调学习率计划：cosine 表示线性 warmup 后余弦衰减；constant 表示固定学习率。",
+        "warmup_ratio": "warmup optimizer step 占总微调 step 的比例，范围为 [0, 1)。",
+        "min_lr": "cosine 调度在训练末尾衰减到的最低学习率。",
         "weight_decay": "AdamW weight decay。",
         "max_grad_norm": "梯度裁剪阈值。",
         "drop_last": "训练 DataLoader 是否丢弃最后一个不完整 batch。",
@@ -270,6 +273,9 @@ class FinetuneOptions:
     epochs: int = 20
     batch_size: int = 32
     lr: float = 2e-5
+    lr_scheduler: str = "cosine"
+    warmup_ratio: float = 0.1
+    min_lr: float = 1e-6
     weight_decay: float = 0.01
     max_grad_norm: float = 1.0
     drop_last: bool = False
@@ -357,6 +363,7 @@ def _finetune_run_name(flow, model, train, dataset_name, run_name=None):
         tokenizer_text,
         dataset_name,
         f"lr{_lr_text(train.lr)}",
+        f"sch{_safe_text(train.lr_scheduler)}",
         f"bn{flow.max_burst_num}",
         f"tl{flow.max_burst_len}",
         f"h{model.hidden_size}",
@@ -1195,6 +1202,9 @@ def run_finetune_pipeline(
             epochs=train.epochs,
             batch_size=train.batch_size,
             lr=train.lr,
+            lr_scheduler=train.lr_scheduler,
+            warmup_ratio=train.warmup_ratio,
+            min_lr=train.min_lr,
             weight_decay=train.weight_decay,
             max_grad_norm=train.max_grad_norm,
             drop_last=train.drop_last,
@@ -1468,6 +1478,13 @@ def main():
     finetune_parser.add_argument("--epochs", type=int, default=10)
     finetune_parser.add_argument("--batch_size", type=int, default=16)
     finetune_parser.add_argument("--lr", type=float, default=1e-4)
+    finetune_parser.add_argument(
+        "--lr_scheduler",
+        choices=["constant", "cosine"],
+        default="cosine",
+    )
+    finetune_parser.add_argument("--warmup_ratio", type=float, default=0.1)
+    finetune_parser.add_argument("--min_lr", type=float, default=1e-6)
     finetune_parser.add_argument("--max_steps", type=int, default=-1)
     finetune_parser.add_argument("--log_every", type=int, default=10)
     finetune_parser.add_argument("--seed", type=int, default=42)
@@ -1525,6 +1542,9 @@ def main():
                 epochs=args.epochs,
                 batch_size=args.batch_size,
                 lr=args.lr,
+                lr_scheduler=args.lr_scheduler,
+                warmup_ratio=args.warmup_ratio,
+                min_lr=args.min_lr,
                 max_steps=args.max_steps,
                 log_every=args.log_every,
                 seed=args.seed,
