@@ -1,0 +1,11 @@
+Hierarchical Flow Transformer (HF)
+Copyright 2026 HF contributors
+
+This project includes code based on UER-py.
+Upstream project: https://github.com/dbiir/UER-py
+Upstream license: Apache License, Version 2.0
+Upstream license source: https://github.com/dbiir/UER-py/blob/master/LICENSE
+
+The HF project adds hierarchical burst-flow model implementations and
+traffic preprocessing, training, evaluation, and analysis utilities.
+Original upstream copyright and attribution notices remain applicable.
